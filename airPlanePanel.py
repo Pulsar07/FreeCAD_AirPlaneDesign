@@ -37,7 +37,7 @@ from airPlaneWingUI import WingEditorPanel
 #  This module provides tools to build a
 #  wing panel
 #################################################
-if open.__module__ in ['__builtin__','io']:
+if open.__module__ in ['__builtin__','io', '_io']:
     pythonopen = open
 
 _wingRibProfilDir=FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/wingribprofil'

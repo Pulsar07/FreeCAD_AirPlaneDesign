@@ -38,7 +38,7 @@ def translate(context, text, disambig=None):
 #  This module provides tools to build a
 #  wing panel
 #################################################
-if open.__module__ in ['__builtin__','io']:
+if open.__module__ in ['__builtin__','io', '_io']:
     pythonopen = open
 
 def readpointsonfile(filename):

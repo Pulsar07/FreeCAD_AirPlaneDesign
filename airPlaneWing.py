@@ -49,7 +49,7 @@ def translate(context, text, disambig=None):
 if open.__module__ in ['__builtin__','io', '_io']:
     pythonopen = open
 
-_wingRibProfilDir=FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/wingribprofil'
+_wingRibProfilDir = os.path.join(os.path.dirname(__file__), 'wingribprofil')
 
 class Wing:
     def __init__(self, obj, _wPanels):
@@ -134,7 +134,7 @@ class WingTaskPanel:
     '''A TaskPanel for the Rib'''
     def __init__(self,vobj):
         self.obj = vobj
-        path_to_ui = FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/resources/airPlaneWpanelTask.ui'
+        path_to_ui = os.path.join(os.path.dirname(__file__), 'resources', 'airPlaneWpanelTask.ui')
         self.form = FreeCADGui.PySideUic.loadUi(path_to_ui)
         self.update(vobj)
 

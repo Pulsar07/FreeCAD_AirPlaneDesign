@@ -82,7 +82,7 @@ class PlaneTaskPanel:
     def __init__(self,vobj):
         print("init RibTaskPanel")
         self.obj = vobj
-        path_to_ui = FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/resources/airPlaneDesignEdit.ui'
+        path_to_ui = os.path.join(os.path.dirname(__file__), 'resources', 'airPlaneDesignEdit.ui')
         self.form = FreeCADGui.PySideUic.loadUi(path_to_ui)
         self.update(vobj)
 

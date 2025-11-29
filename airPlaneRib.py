@@ -116,7 +116,7 @@ class RibTaskPanel:
     '''A TaskPanel for the Rib'''
     def __init__(self,vobj):
         self.obj = vobj
-        path_to_ui = FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/resources/ribTaskPanel.ui'
+        path_to_ui = os.path.join(os.path.dirname(__file__), 'resources', 'ribTaskPanel.ui')
         self.form = FreeCADGui.PySideUic.loadUi(path_to_ui)
         self.update(vobj)
         self.form.xfoilSimulation.clicked.connect(self.xfoilSimulation)

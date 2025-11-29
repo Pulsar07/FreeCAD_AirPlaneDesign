@@ -46,12 +46,12 @@ class zoomableGraphic(QtGui.QGraphicsView):
 
 class SelectObjectUI():
     def __init__(self):
-        path_to_ui = FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/resources/selectRibProfil.ui'
+        path_to_ui = os.path.join(os.path.dirname(__file__), 'resources', 'selectRibProfil.ui')
         loader=QtUiTools.QUiLoader()
         loader.registerCustomWidget(zoomableGraphic)
         self.form=loader.load(path_to_ui)
         #self.form.setWindowFlag(QtCore.Qt.WindowMaximizeButtonHint) # compatibility with Freecad V0.18
-        profil_dir=FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/wingribprofil'
+        profil_dir = os.path.join(os.path.dirname(__file__), 'wingribprofil')
         self.model = QtGui.QFileSystemModel()
         self.model.setRootPath(profil_dir)
         tree =  self.form.listProfil

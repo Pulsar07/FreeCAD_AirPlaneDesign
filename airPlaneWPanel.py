@@ -25,7 +25,7 @@ __url__ = "https://fredsfactory.fr"
 import FreeCADGui
 import FreeCAD
 from FreeCAD import Vector
-import Part, Draft
+import Part, Draft, os
 from PySide import QtGui, QtCore
 import WorkingPlane
 import CompoundTools.Explode
@@ -219,7 +219,7 @@ def distribute(x, distribution, reverse = False):
 if open.__module__ in ['__builtin__','io', '_io']:
     pythonopen = open
 
-_wingRibProfilDir=FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/wingribprofil'
+_wingRibProfilDir = os.path.join(os.path.dirname(__file__), 'wingribprofil')
 
 class WingPanel:
     def __init__(self,

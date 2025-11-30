@@ -40,7 +40,7 @@ def translate(context, text, disambig=None):
 if open.__module__ in ['__builtin__','io', '_io']:
     pythonopen = open
 
-_wingRibProfilDir=FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/wingribprofil'
+_wingRibProfilDir = os.path.join(os.path.dirname(__file__), 'wingribprofil')
 
 class WingSPanel:
     def __init__(self, obj, _rootRib ,_tipRib ,_rootChord=200,_tipChord=100,_panelLength=100,_tipTwist=0,_dihedral=0):

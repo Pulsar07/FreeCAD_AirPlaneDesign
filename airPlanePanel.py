@@ -29,6 +29,7 @@ __url__ = "https://fredsfactory.fr"
 
 import FreeCAD
 import FreeCADGui
+import os
 
 from airPlaneRib import WingRib, ViewProviderWingRib
 from airPlaneWingUI import WingEditorPanel
@@ -40,7 +41,7 @@ from airPlaneWingUI import WingEditorPanel
 if open.__module__ in ['__builtin__','io', '_io']:
     pythonopen = open
 
-_wingRibProfilDir=FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/wingribprofil'
+_wingRibProfilDir = os.path.join(os.path.dirname(__file__), 'wingribprofil')
 
 class WPanel:
     def __init__(self, obj,_NberOfPanel,_panelInput):

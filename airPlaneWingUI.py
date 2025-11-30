@@ -12,6 +12,7 @@
 ################################################
 import FreeCAD
 import FreeCADGui
+import os
 from PySide import QtCore
 from PySide import QtGui
 
@@ -24,7 +25,7 @@ def translate(context, text, disambig=None):
 
 class WingEditorPanel():
     def __init__(self):
-        path_to_ui = FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/resources/airPlaneDesignWingdialog.ui'
+        path_to_ui = os.path.join(os.path.dirname(__file__), 'resources', 'airPlaneDesignWingdialog.ui')
         self.form = FreeCADGui.PySideUic.loadUi(path_to_ui)
         self.form.airPlaneName.setText("nom")
 
@@ -40,7 +41,7 @@ class WingEditorPanel():
         return int(QtGui.QDialogButtonBox.Ok)
 
     def loadPanelTable(self):
-        _wingRibProfilDir=FreeCAD.getUserAppDataDir()+ 'Mod/AirPlaneDesign/wingribprofil'
+        _wingRibProfilDir = os.path.join(os.path.dirname(__file__), 'wingribprofil')
 
         ##########################
         # Numéro du panneau, profil, fichier profil, , corde emplature, corde saumon, longueur paneau, X emplature, X saumon, Y emplature, Y saumon, Z emplature, Z saumon, X Rotation, Y Rotation, Z Rotation

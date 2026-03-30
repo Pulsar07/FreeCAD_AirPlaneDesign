@@ -41,13 +41,16 @@ def translate(context, text, disambig=None):
 if open.__module__ in ['__builtin__','io', '_io']:
     pythonopen = open
 
+
 def readpointsonfile(filename):
     # The common airfoil dat format has many flavors, This code should work with almost every dialect,
     # Regex to identify data rows and throw away unused metadata
     regex = re.compile(r'^\s*(?P<xval>(\-|\d*)\.\d+(E\-?\d+)?)\,?\s*(?P<yval>\-?\s*\d*\.\d+(E\-?\d+)?)\s*$')
     afile = pythonopen(filename,'r')
     coords=[]
+    name = "unknown"
     # Collect the data for the upper and the lower side separately if possible
+    linenum=0
     for lin in afile:
         curdat = regex.match(lin)
         if curdat != None:
@@ -59,7 +62,12 @@ def readpointsonfile(filename):
             if (x < 1.01) and (z < 1) and (x > -0.01) and (z > -1):
                 coords.append(FreeCAD.Vector(x,y,z))
             else:
-                FreeCAD.Console.PrintWarning("Ignoring coordinates out of range -0.01<x<1.01 and/or -1<z<1. If this is a Lednicer format airfoil this is normal.")
+                coords.append(FreeCAD.Vector(x,y,z))
+                #FreeCAD.Console.PrintWarning("Ignoring coordinates out of range -0.01<x<1.01 and/or -1<z<1. If this is a Lednicer format airfoil this is normal.")
+        else:
+          if linenum == 0:
+            name = lin.strip("\n\t ")
+        linenum +=1
         # End of if curdat != None
     # End of for lin in file
     afile.close
@@ -75,32 +83,117 @@ def readpointsonfile(filename):
         flippoint = coords.index(coords[0],1)
         coords[:flippoint+1]=coords[flippoint-1::-1]
 
-    return coords
+    return name, coords
 
-def process(filename,scale,posX,posY,posZ,rotX,rotY,rotZ,rot,useSpline,splitSpline,coords=[]):
+
+def process(filename,airfoilname,scale,thickness,tegap,teblendig,posX,posY,posZ,rotX,rotY,rotZ,rot,useSpline,splitSpline,millTeLength,coords=[]):
+    
     if len(coords) == 0 :
-        coords = readpointsonfile(filename)
+        airfoilname, coords = readpointsonfile(filename)
+        
+    maxZ = minZ = coords[0].z
+    for k in range(1, len(coords)):
+        if coords[k].z > maxZ:
+            maxZ = coords[k].z
+        if coords[k].z < minZ:
+            minZ = coords[k].z
+    print("min/max Z coords: " + str(minZ) + "/" + str(maxZ))
+    thickness = (maxZ - minZ) * 100
+    print("min/max thickness: {:.2f}".format(thickness))
+    
+    maxdiff = 0.0
+    for k in range(1, int(len(coords)/2)):
+        diff = coords[k].z - coords[-k].z
+        if diff > maxdiff:
+          maxdiff = diff
+    thickness = maxdiff * 100
+    print("diff thickness: {:.2f}".format(thickness))
+          
+    # process the trailing edge gap settings
+    currentTEGap = (coords[0].z - coords[-1].z)*scale.Value
+    print("TE Gap : {:.2f}".format(currentTEGap))
+    print("TE Gap calc: "+"{:.2f}".format(tegap*scale.Value))
+    
+    if abs(tegap*scale.Value - currentTEGap) > 0.1:
+      # TODO code for TE processing
+      pass
+      
+    tcoords = coords.copy()
+
     # do we use a BSpline?
+    if millTeLength > 0.0:
+        millTePercent = millTeLength / scale
+        # find the two up and down TE vectors
+        for i in range(0,3,1):
+          print("v["+str(i)+"] : " + repr(tcoords[i]))
+        for i in range(-1,-4,-1):
+          print("v["+str(i)+"] : " + repr(tcoords[i]))
+        # 
+        print ("mill modifications one: ")
+        x0 = tcoords[0].x
+        z0 = tcoords[0].z
+        x1 = tcoords[1].x
+        z1 = tcoords[1].z
+        print ("xz[0]=" + str(x0) + "/" + str(z0))
+        print ("xz[1]=" + str(x1) + "/" + str(z1))
+        v = FreeCAD.Vector(x0 - (x0-x1)/3*2, 0, z0+abs(z0-z1)/3*2)
+        
+        tcoords.insert(1, v)
+        v = FreeCAD.Vector(x0 - (x0-x1)/3, 0, z0+abs(z0-z1)/3)
+        tcoords.insert(1, v)
+        
+        tcoords.insert(0, FreeCAD.Vector(1.0+(millTePercent*0.1),tcoords[0].y,tcoords[0].z))
+        tcoords.insert(0, FreeCAD.Vector(1.0+(millTePercent*0.2),tcoords[0].y,tcoords[0].z))
+        tcoords.insert(0, FreeCAD.Vector(1.0+(millTePercent*0.4),tcoords[0].y,tcoords[0].z))
+        tcoords.insert(0, FreeCAD.Vector(1.0+(millTePercent*0.6),tcoords[0].y,tcoords[0].z))
+        tcoords.insert(0, FreeCAD.Vector(1.0+(millTePercent*1.0),tcoords[0].y,tcoords[0].z))
+
+        x0 = tcoords[-1].x
+        z0 = tcoords[-1].z
+        x1 = tcoords[-2].x
+        z1 = tcoords[-2].z
+        print ("xz[-1]=" + str(x0) + "/" + str(z0))
+        print ("xz[-2]=" + str(x1) + "/" + str(z1))
+        v = FreeCAD.Vector(x0 - (x0-x1)/3*2, 0, z0+(z1-z0)/3*2)
+        tcoords.insert(-1, v)
+        v = FreeCAD.Vector(x0 - (x0-x1)/3, 0, z0+(z1-z0)/3)
+        tcoords.insert(-1, v)
+
+        tcoords.append(FreeCAD.Vector(1.0+(millTePercent*0.1),tcoords[-1].y,tcoords[-1].z))
+        tcoords.append(FreeCAD.Vector(1.0+(millTePercent*0.2),tcoords[-1].y,tcoords[-1].z))
+        tcoords.append(FreeCAD.Vector(1.0+(millTePercent*0.4),tcoords[-1].y,tcoords[-1].z))
+        tcoords.append(FreeCAD.Vector(1.0+(millTePercent*0.6),tcoords[-1].y,tcoords[-1].z))
+        tcoords.append(FreeCAD.Vector(1.0+(millTePercent*1.0),tcoords[-1].y,tcoords[-1].z))
+
+        print ("version 4")
+
+        for i in range(0,9,1):
+          print("v["+str(i)+"] : " + repr(tcoords[i]))
+        for i in range(-1,-10,-1):
+          print("v["+str(i)+"] : " + repr(tcoords[i]))
+
+
+
     if useSpline:
         if splitSpline: #do we split between upper and lower side?
-            if coords.__contains__(FreeCAD.Vector(0,0,0)): # lgtm[py/modification-of-default-value]
-                flippoint = coords.index(FreeCAD.Vector(0,0,0))
+            if tcoords.__contains__(FreeCAD.Vector(0,0,0)): # lgtm[py/modification-of-default-value]
+                flippoint = tcoords.index(FreeCAD.Vector(0,0,0))
             else:
-                lengthList=[v.Length for v in coords]
+                lengthList=[v.Length for v in tcoords]
                 flippoint = lengthList.index(min(lengthList))
             splineLower = Part.BSplineCurve()
             splineUpper = Part.BSplineCurve()
-            splineUpper.interpolate(coords[:flippoint+1])
-            splineLower.interpolate(coords[flippoint:])
-            if coords[0] != coords[-1]:
-                wire = Part.Wire([splineUpper.toShape(),splineLower.toShape(),Part.makeLine(coords[0],coords[-1])])
+            splineUpper.interpolate(tcoords[:flippoint+1])
+            splineLower.interpolate(tcoords[flippoint:])
+            if tcoords[0] != tcoords[-1]:
+                wire = Part.Wire([splineUpper.toShape(),splineLower.toShape(),Part.makeLine(tcoords[0],tcoords[-1])])
             else:
                 wire = Part.Wire([splineUpper.toShape(),splineLower.toShape()])
         else:
             spline = Part.BSplineCurve()
-            spline.interpolate(coords)
-            if coords[0] != coords[-1]:
-                wire = Part.Wire([spline.toShape(),Part.makeLine(coords[0],coords[-1])])
+            spline.interpolate(tcoords)
+            if tcoords[0] != tcoords[-1]:
+                wire = Part.Wire([spline.toShape(),Part.makeLine(tcoords[0],tcoords[-1])])
             else:
                 wire = Part.Wire(spline.toShape())
     else:
@@ -108,7 +201,7 @@ def process(filename,scale,posX,posY,posZ,rotX,rotY,rotZ,rot,useSpline,splitSpli
         lines = []
         first_v = None
         last_v = None
-        for v in coords:
+        for v in tcoords:
             if first_v is None:
                 first_v = v
             # End of if first_v is None

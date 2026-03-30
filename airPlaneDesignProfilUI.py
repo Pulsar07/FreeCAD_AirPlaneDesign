@@ -150,7 +150,7 @@ class SelectObjectUI():
 
     def updateRibDAT(self):
         self.form.profilTable.setRowCount(0)
-        coords=readpointsonfile(self.filePath)
+        name, coords=readpointsonfile(self.filePath)
 
         row_number=0
         for v in coords :

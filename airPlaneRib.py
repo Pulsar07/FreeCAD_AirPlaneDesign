@@ -52,7 +52,7 @@ def translate(context, text, disambig=None):
 
 
 class WingRib:
-    def __init__(self, obj,_profil,_nacagene,_nacaNbrPoint,_chord=100,_x=0,_y=0,_z=0,_xrot=0,_yrot=0,_zrot=0,_rot=0,_thickness=0,_useSpline = True,_finite_TE = False,_splitSpline = False):
+    def __init__(self, obj,_profil,_nacagene,_nacaNbrPoint,_chord=100,_x=0,_y=0,_z=0,_xrot=0,_yrot=0,_zrot=0,_rot=0,_thickness=0,_useSpline = True,_finite_TE = False,_splitSpline = False,_millTeLength = 0.0):
         '''Rib properties'''
         obj.Proxy = self
         obj.addProperty("App::PropertyFile","RibProfil","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","Profil type")).RibProfil=_profil
@@ -67,7 +67,14 @@ class WingRib:
         obj.addProperty("App::PropertyBool","splitSpline","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","split spline in lower and upper side")).splitSpline=_splitSpline
         obj.addProperty("App::PropertyLength","Chord","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","Chord")).Chord=_chord
         obj.addProperty("App::PropertyLength","Thickness","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","Thickness")).Thickness=_thickness
+        obj.addProperty("App::PropertyString","AirfoilName","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","Airfoil name (from DAT-file)")).AirfoilName=""
+        obj.addProperty("App::PropertyInteger","NbrPoint","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","Rip Number of Points")).NbrPoint=0
+        obj.addProperty("App::PropertyFloat","AirfoilThickness","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","Airfoil Thickness")).AirfoilThickness=0.0
+        obj.addProperty("App::PropertyFloat","TEGap","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","trailing edge gap in %")).TEGap=0.0
+        obj.addProperty("App::PropertyLength","TEGapLength","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","trailing edge gap in mm")).TEGapLength=0.0
+        obj.addProperty("App::PropertyInteger","TEBlendingDistance","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","trailing edge blending distance in %")).TEBlendingDistance=80
         obj.addProperty("App::PropertyLength","wingkey","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","Wing Key"))
+        obj.addProperty("App::PropertyLength","millTeLength","Rib",QtCore.QT_TRANSLATE_NOOP("App::Property","Mill TE")).millTeLength = _millTeLength
         obj.addProperty("App::PropertyVectorList","Coordinates","Rib","Vector list that defines the airfoil's geometry").Coordinates=[]
 
         obj.Placement=FreeCAD.Placement(FreeCAD.Vector(_x,_y,_z), FreeCAD.Rotation(FreeCAD.Vector(_xrot,_yrot,_zrot),_rot), FreeCAD.Vector(0,0,0))
@@ -77,6 +84,7 @@ class WingRib:
 
     def onChanged(self, fp, prop):
         '''Do something when a property has changed'''
+        # print(fp.PropertiesList)
         if (str(prop) == "RibProfil") and (fp.PropertiesList.__contains__("Coordinates")):
             print("Rib onChanged:")
             fp.Coordinates=[]
@@ -88,12 +96,45 @@ class WingRib:
         #print("--------  Rib execute  --------")
 
         if fp.NacaProfil =="" :
-            face, fp.Coordinates=process(fp.RibProfil,
-                                         fp.Chord,
+            AirfoilName=""
+            AirfoilThickness=0.0
+            TEGap=0.0
+            TEBlendingDistance=0
+            millTeLength =0.0
+       
+            
+            try: 
+              if fp.getPropertyByName("AirfoilName") != None:
+                  print("WingRip Version 2")
+                  AirfoilName=fp.AirfoilName
+                  AirfoilThickness=fp.AirfoilThickness
+                  TEGap=fp.TEGap
+                  TEBlendingDistance=fp.TEBlendingDistance
+                  millTeLength = fp.millTeLength
+            except:
+              print("WingRip Version 1")
+
+             
+
+            face, fp.Coordinates, AirfoilName, AirfoilThickness = process(fp.RibProfil,AirfoilName,
+                                         fp.Chord,AirfoilThickness, TEGap,TEBlendingDistance, 
                                          fp.Placement.Base.x,fp.Placement.Base.y,fp.Placement.Base.z,
                                          fp.Placement.Rotation.Axis.x,fp.Placement.Rotation.Axis.y,fp.Placement.Rotation.Axis.z,
                                          math.degrees(fp.Placement.Rotation.Angle),
-                                         fp.useSpline,fp.splitSpline,fp.Coordinates)
+                                         fp.useSpline,fp.splitSpline,millTeLength,fp.Coordinates)
+
+            try: 
+              if fp.getPropertyByName("AirfoilName") != None:
+                fp.AirfoilName = AirfoilName
+                fp.AirfoilThickness = AirfoilThickness
+                fp.TEGap = TEGap
+                fp.TEBlendingDistance = TEBlendingDistance
+                fp.TEGapLength = (fp.Coordinates[0].z - fp.Coordinates[-1].z)*fp.Chord
+                fp.NbrPoint = len(fp.Coordinates)
+                print("RSRS TEGAP: " + str(fp.TEGapLength))
+            except:
+              pass
+
         else :
             face, fp.Coordinates=generateNaca(fp.NacaProfil, fp.NacaNbrPoint, fp.finite_TE,True,
                                     fp.Chord,fp.Placement.Base.x,fp.Placement.Base.y,fp.Placement.Base.z,

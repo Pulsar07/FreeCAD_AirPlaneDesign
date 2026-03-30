@@ -232,4 +232,4 @@ def process(filename,airfoilname,scale,thickness,tegap,teblendig,posX,posY,posZ,
     #face.rotate([0,0,0],FreeCAD.Vector(rotX, rotY, rotZ),rot)
 
 
-    return face, coords
+    return face, coords, str(airfoilname), thickness
